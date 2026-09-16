@@ -4,6 +4,7 @@ import { colors, radius } from '../../app/theme/theme';
 import { Screen } from '../../components/Screen';
 import { usePlayerStore } from '../../stores/usePlayerStore';
 import type { Task, TaskCategory } from '../../types/task';
+import { CreateTaskModal } from './CreateTaskModal';
 import { starterTasks, taskCategoryLabels } from './taskData';
 
 type Filter = 'all' | TaskCategory;
@@ -12,6 +13,7 @@ const filters: Filter[] = ['all', 'health', 'fitness', 'diet', 'sleep', 'study',
 export function TaskScreen() {
   const [tasks, setTasks] = useState<Task[]>(starterTasks);
   const [filter, setFilter] = useState<Filter>('all');
+  const [creating, setCreating] = useState(false);
   const grantReward = usePlayerStore(state => state.grantReward);
 
   const visibleTasks = useMemo(
@@ -29,75 +31,60 @@ export function TaskScreen() {
     grantReward(task.expReward, task.coinReward);
   };
 
+  const createTask = (task: Task) => {
+    setTasks(current => [task, ...current]);
+    setFilter('all');
+  };
+
   return (
-    <Screen contentStyle={styles.screen}>
-      <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>TODAY · 今日行动</Text>
-          <Text style={styles.title}>今天想让世界成长一点吗？</Text>
-          <Text style={styles.subtitle}>完成现实中的小行动，积累属于你的成长。</Text>
+    <>
+      <Screen contentStyle={styles.screen}>
+        <View style={styles.header}>
+          <View style={styles.headerCopy}>
+            <Text style={styles.eyebrow}>TODAY · 今日行动</Text>
+            <Text style={styles.title}>今天想让世界成长一点吗？</Text>
+            <Text style={styles.subtitle}>完成现实中的小行动，积累属于你的成长。</Text>
+          </View>
+          <Pressable onPress={() => setCreating(true)} style={styles.addButton}><Text style={styles.addButtonText}>＋</Text></Pressable>
         </View>
-        <Pressable style={styles.addButton}><Text style={styles.addButtonText}>＋</Text></Pressable>
-      </View>
 
-      <View style={styles.progressCard}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.progressTitle}>今日进度</Text>
-          <Text style={styles.progressValue}>{completedCount} / {tasks.length}</Text>
+        <View style={styles.progressCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.progressTitle}>今日进度</Text>
+            <Text style={styles.progressValue}>{completedCount} / {tasks.length}</Text>
+          </View>
+          <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress * 100}%` }]} /></View>
+          <Text style={styles.progressHint}>{completedCount === tasks.length ? '今天的行动已经全部完成 ✦' : '不用一次完成很多，先完成一个就好。'}</Text>
         </View>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-        </View>
-        <Text style={styles.progressHint}>
-          {completedCount === tasks.length ? '今天的行动已经全部完成 ✦' : '不用一次完成很多，先完成一个就好。'}
-        </Text>
-      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-        {filters.map(item => {
-          const active = item === filter;
-          return (
-            <Pressable key={item} onPress={() => setFilter(item)} style={[styles.filterChip, active && styles.filterChipActive]}>
-              <Text style={[styles.filterText, active && styles.filterTextActive]}>{taskCategoryLabels[item]}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+          {filters.map(item => {
+            const active = item === filter;
+            return <Pressable key={item} onPress={() => setFilter(item)} style={[styles.filterChip, active && styles.filterChipActive]}><Text style={[styles.filterText, active && styles.filterTextActive]}>{taskCategoryLabels[item]}</Text></Pressable>;
+          })}
+        </ScrollView>
+
+        <View style={[styles.rowBetween, styles.sectionHeader]}><Text style={styles.sectionTitle}>今日任务</Text><Text style={styles.sectionMeta}>{visibleTasks.length} 项</Text></View>
+        <View style={styles.taskList}>
+          {visibleTasks.map(task => (
+            <Pressable key={task.id} onPress={() => completeTask(task)} style={[styles.taskCard, task.completed && styles.taskCardCompleted]}>
+              <View style={[styles.check, task.completed && styles.checkCompleted]}><Text style={styles.checkMark}>{task.completed ? '✓' : ''}</Text></View>
+              <View style={styles.taskContent}>
+                <View style={styles.taskTitleRow}><Text style={[styles.taskTitle, task.completed && styles.taskTitleCompleted]}>{task.title}</Text><Text style={styles.category}>{taskCategoryLabels[task.category]}</Text></View>
+                <Text style={styles.taskDescription}>{task.target ? `目标 ${task.target}${task.unit ? ` ${task.unit}` : ''} · ` : ''}{task.description}</Text>
+                <View style={styles.rewardRow}><Text style={styles.expReward}>+{task.expReward} EXP</Text><Text style={styles.coinReward}>+{task.coinReward} 创世币</Text></View>
+              </View>
             </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      <View style={[styles.rowBetween, styles.sectionHeader]}>
-        <Text style={styles.sectionTitle}>今日任务</Text>
-        <Text style={styles.sectionMeta}>{visibleTasks.length} 项</Text>
-      </View>
-
-      <View style={styles.taskList}>
-        {visibleTasks.map(task => (
-          <Pressable key={task.id} onPress={() => completeTask(task)} style={[styles.taskCard, task.completed && styles.taskCardCompleted]}>
-            <View style={[styles.check, task.completed && styles.checkCompleted]}>
-              <Text style={styles.checkMark}>{task.completed ? '✓' : ''}</Text>
-            </View>
-            <View style={styles.taskContent}>
-              <View style={styles.taskTitleRow}>
-                <Text style={[styles.taskTitle, task.completed && styles.taskTitleCompleted]}>{task.title}</Text>
-                <Text style={styles.category}>{taskCategoryLabels[task.category]}</Text>
-              </View>
-              <Text style={styles.taskDescription}>{task.description}</Text>
-              <View style={styles.rewardRow}>
-                <Text style={styles.expReward}>+{task.expReward} EXP</Text>
-                <Text style={styles.coinReward}>+{task.coinReward} 创世币</Text>
-              </View>
-            </View>
-          </Pressable>
-        ))}
-      </View>
-
-      <Pressable style={styles.createTaskButton}>
-        <Text style={styles.createTaskIcon}>＋</Text>
-        <View style={styles.createCopy}>
-          <Text style={styles.createTaskTitle}>创建自己的任务</Text>
-          <Text style={styles.createTaskSubtitle}>把你真正想坚持的事情加入创世录</Text>
+          ))}
         </View>
-      </Pressable>
-    </Screen>
+
+        <Pressable onPress={() => setCreating(true)} style={styles.createTaskButton}>
+          <Text style={styles.createTaskIcon}>＋</Text>
+          <View style={styles.createCopy}><Text style={styles.createTaskTitle}>创建自己的任务</Text><Text style={styles.createTaskSubtitle}>把你真正想坚持的事情加入创世录</Text></View>
+        </Pressable>
+      </Screen>
+      <CreateTaskModal visible={creating} onClose={() => setCreating(false)} onCreate={createTask} />
+    </>
   );
 }
 
