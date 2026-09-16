@@ -13,9 +13,13 @@ export type TaskType = 'one_off' | 'daily' | 'weekly' | 'habit' | 'milestone' | 
 export type Task = {
   id: string;
   title: string;
+  description?: string;
   category: TaskCategory;
   type: TaskType;
   expReward: number;
   coinReward: number;
   completed: boolean;
+  target?: number;
+  current?: number;
+  unit?: string;
 };
