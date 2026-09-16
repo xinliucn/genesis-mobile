@@ -5,6 +5,8 @@ type PlayerState = {
   exp: number;
   coins: number;
   addExp: (amount: number) => void;
+  addCoins: (amount: number) => void;
+  grantReward: (exp: number, coins: number) => void;
 };
 
 export const usePlayerStore = create<PlayerState>(set => ({
@@ -12,4 +14,10 @@ export const usePlayerStore = create<PlayerState>(set => ({
   exp: 0,
   coins: 100,
   addExp: amount => set(state => ({ exp: state.exp + amount })),
+  addCoins: amount => set(state => ({ coins: state.coins + amount })),
+  grantReward: (exp, coins) =>
+    set(state => ({
+      exp: state.exp + exp,
+      coins: state.coins + coins,
+    })),
 }));
